@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'bootstrap-3.3.7-dist/css/bootstrap.min.css' %}">
+    <script src="{% static 'bootstrap-3.3.7-dist/js/bootstrap.min.js' %}"></script>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <h2 class="text-center">注册</h2>
+            <form id="myform" novalidate>
+                {% csrf_token %}
+                {% for foo in form_obj %}
+                    <div class="form-group">
+                        {#foo.auto_id获取foo渲染的input框的id值#}
+                        <label for="{{ foo.auto_id }}">{{ foo.label }}</label>
+                        {{ foo }}
+                        <span class="errors pull-right" style="color: red;"></span>
+                    </div>
+                {% endfor %}
+                <div class="form-group">
+                    <label for="myfile">头像
+                    <img src="/static/img/default.jpg" alt="" height="80" style="margin-left: 20px" id="img">
+                    </label>
+                    <input type="file" name="avatar" id="myfile" style="display: none">
+                </div>
+                <input type="button" class="btn btn-primary pull-right" value="注册" id="id_submit">
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#myfile').change(function () {
+        // 获取用户上传的头像 然后替换到img标签中
+        // 1 获取用户上传的文件对象
+        var fileObj = $(this)[0].files[0];
+        // 2.利用内置对象FileReader
+        var fileReader = new FileReader();  //文件阅读器
+        // 3.将文件对象交由文件阅读器读取 文件内容
+        fileReader.readAsDataURL(fileObj);  // IO操作速度较慢
+        // 4.找到img标签 修改src属性
+        // 等待文件阅读器完全读取完文件数据之后 才做下面的操作 onload
+        fileReader.onload = function(){ $('#img').attr('src',fileReader.result)}
+    });
+
+    // 绑定点击事件
+    $('#id_submit').click(function () {
+        // 1. 产生内置对象formdata
+        var formData = new FormData();
+        // 2. 循环添加普通键值对
+        {#console.log($('#myform').serializeArray())#}
+        $.each($('#myform').serializeArray(),function (index,obj) {
+            formData.append(obj.name,obj.value)
+        });
+        // 3. 手动添加文件
+        formData.append('myfile',$('#myfile')[0].files[0]) ;
+        // 4. 发送ajax请求
+        $.ajax({
+            url:'',
+            type:'post',
+            data:formData,
+
+            // 传文件需要指定两个参数
+            contentType:false,
+            processData:false,
+
+            success:function (data) {
+                if (data.code==100){
+                    location.href = data.url
+                }else{
+                    // 如果没有成功 说明用户输入的数据不合法 你需要展示错误信息
+                    // console.log(data.msg)
+                    // 能够将对应的错误信息准确无误的渲染到对应的input下面的span标签中
+                    // 手动拼接input的id值
+                    $.each(data.msg,function (index,obj) {
+                        {#console.log(index,obj)#}
+                        var targetId = '#id_' + index;
+                        $(targetId).next().text(obj[0]).parent().addClass('has-error')
+                    })
+                }
+            }
+
+
+        })
+    });
+
+    $('input').focus(function () {
+        $(this).next().text('').parent().removeClass('has-error')
+    })
+</script>
+</body>
+</html>
